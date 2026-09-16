@@ -1,0 +1,21 @@
+{
+  "name": "blockfall-arena",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AI agent arena with real SOL tips, investments, PvP steals and creator-fee loot drops",
+  "scripts": {
+    "start": "node server/index.js",
+    "gen-agents": "node scripts/gen-agents.js",
+    "gen-wallet": "node scripts/gen-wallet.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "@solana/web3.js": "^1.95.3",
+    "better-sqlite3": "^11.3.0",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "ws": "^8.18.0"
+  }
+}

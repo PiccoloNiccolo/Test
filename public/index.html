@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blockfall Arena</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⛏️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Chakra+Petch:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#8b8b8b;--panel:#c6c6c6;--hi:#fff;--lo:#555;--ink:#1f1f1f;--muted:#474747;--slot:#8b8b8b;--slot-ink:#fff;--focus:#2a6bff}
+@media (prefers-color-scheme: dark){:root{--bg:#15131f;--panel:#2b2838;--hi:#4a4560;--lo:#0c0a12;--ink:#ecebf3;--muted:#a6a2b8;--slot:#1a1824;--slot-ink:#ecebf3}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Chakra Petch",system-ui,sans-serif;font-size:14px;line-height:1.35;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0}
+button:focus-visible,li:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+a{color:inherit}
+.bevel{background:var(--panel);box-shadow:inset 3px 3px 0 var(--hi),inset -3px -3px 0 var(--lo)}
+.slot{background:var(--slot);color:var(--slot-ink);box-shadow:inset 2px 2px 0 var(--lo),inset -2px -2px 0 var(--hi)}
+.btn{padding:6px 10px;font-weight:700}
+.btn:active{box-shadow:inset 3px 3px 0 var(--lo),inset -3px -3px 0 var(--hi)}
+.btn.primary{background:#7a2fe0;color:#fff;box-shadow:inset 3px 3px 0 #b48cff,inset -3px -3px 0 #3d1275}
+.btn:disabled,.perk:disabled{opacity:.45;cursor:not-allowed}
+header{display:flex;align-items:center;gap:10px 14px;padding:8px 12px;flex-wrap:wrap}
+.logo{font-family:Silkscreen,monospace;font-size:22px;line-height:1;text-shadow:3px 3px 0 var(--lo)}
+.logo span{color:#14f195;text-shadow:3px 3px 0 #05331f}
+.live{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;color:#fff;background:#d4202a;font-family:Silkscreen,monospace;font-size:12px}
+.live.off{background:#666}
+.live i{width:8px;height:8px;background:#fff;display:block;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.net{font-weight:700;padding:3px 7px;background:#ffb020;color:#1a1200}
+.clock{display:flex;align-items:center;gap:10px;flex:1 1 280px;max-width:440px;margin-left:auto}
+.pill{padding:5px 8px;font-weight:700;white-space:nowrap}
+.bar{position:relative;flex:1;height:16px;min-width:120px}
+.bar .night{position:absolute;top:2px;bottom:2px;width:12.5%;background:rgba(20,16,60,.6)}
+.bar .fill{position:absolute;top:2px;bottom:2px;left:2px;width:0;background:#14f195;opacity:.75}
+.bar .close{position:absolute;top:-4px;bottom:-4px;left:66.67%;width:2px;background:#ffd84a}
+.ca{font-weight:600;font-size:12px}
+main{flex:1;display:flex;min-height:0;gap:8px;padding:0 8px 8px}
+#stage{position:relative;flex:1;min-width:0;overflow:hidden;box-shadow:0 0 0 3px var(--lo);background:#8ecfff}
+#stage canvas{position:absolute;inset:0;display:block;touch-action:none;cursor:grab}
+/* scene overlays use fixed colors that read on the 3D world */
+#tags{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.tag{position:absolute;left:0;top:0;font:9px Silkscreen,monospace;color:#fff;background:rgba(10,8,20,.6);padding:2px 4px 3px;white-space:nowrap;text-align:center}
+.tag.sel{background:rgba(122,47,224,.92);font-size:11px}
+.tag i,.mtag i,.ctag i{display:block;height:3px;background:rgba(255,255,255,.25);margin-top:2px}
+.tag b,.mtag b{display:block;height:100%;background:#4ee06a}
+.mtag{position:absolute;left:0;top:0;width:26px}.mtag b{background:#ff4d4d}
+.ctag{position:absolute;left:0;top:0;font:700 12px "Chakra Petch",sans-serif;color:#1a1200;background:#ffd84a;padding:3px 7px;white-space:nowrap;text-align:center;box-shadow:inset -2px -2px 0 #a37b00}
+.ctag i{background:rgba(0,0,0,.2)}.ctag b{display:block;height:100%;background:#7a2fe0}
+.pop{position:absolute;left:0;top:0;font:700 13px "Chakra Petch",sans-serif;color:#fff;text-shadow:2px 2px 0 #000;white-space:nowrap}
+.pop.sol{font-size:15px;color:#14f195}.pop.kill{color:#ff8b7a;font-size:15px}
+.hint{position:absolute;left:10px;bottom:10px;font:600 11px "Chakra Petch",sans-serif;color:#fff;background:rgba(10,8,20,.55);padding:4px 7px;pointer-events:none}
+#toast{position:absolute;left:50%;top:18px;transform:translateX(-50%);font:700 14px "Chakra Petch",sans-serif;color:#fff;background:rgba(10,8,20,.85);padding:8px 14px;opacity:0;transition:opacity .3s;pointer-events:none;max-width:92%;text-align:center}
+#toast.on{opacity:1}
+#results{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,6,20,.45)}
+#results.on{display:flex}
+#results .card{padding:18px 22px;max-width:92%;width:400px}
+#results h2{font-family:Silkscreen,monospace;margin:0 0 8px;font-size:19px;font-weight:400}
+aside{width:370px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto}
+section{padding:10px 12px}
+section h3{margin:0 0 8px;font-family:Silkscreen,monospace;font-size:13px;font-weight:400}
+section h4{margin:10px 0 6px;font-size:13px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.addr{font-weight:600;padding:5px 8px;font-size:12px}
+.bal{padding:6px 10px;font-weight:700;font-size:16px}
+.note{color:var(--muted);font-size:12px;margin:6px 0 0}
+.toggle{display:flex;align-items:center;gap:6px;font-weight:600;color:var(--muted);margin-top:8px}
+.toggle input{accent-color:#7a2fe0;width:16px;height:16px}
+.who{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.face{width:40px;height:40px;flex:none;box-shadow:inset 2px 2px 0 rgba(255,255,255,.35),inset -2px -2px 0 rgba(0,0,0,.35)}
+.who b{display:block;font-size:15px}
+.sub{color:var(--muted);font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.copy{padding:1px 6px;font-size:11px;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.stats div{padding:4px 6px;font-size:12px}.stats div b{display:block;font-size:14px}
+.invest{padding:8px 10px;font-size:13px}.invest b{color:#14f195}
+.chips{display:flex;gap:4px;margin-top:6px}
+.chips button{flex:1;padding:6px 0;font-weight:700}
+.chips button[aria-pressed="true"]{background:#7a2fe0;color:#fff;box-shadow:none}
+#investBtn{width:100%;margin-top:6px;padding:9px}
+.perks{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.perk{text-align:left;padding:8px 9px;display:flex;flex-direction:column;gap:1px}
+.perk .top{display:flex;justify-content:space-between;font-weight:700;gap:4px}
+.perk .cost{color:#14f195}.perk small{opacity:.75;font-size:11px}
+#txStatus{margin-top:8px;padding:6px 8px;font-size:12px;display:none}
+#txStatus.on{display:block}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.list li{padding:6px 8px;font-size:12px}
+#board li{display:grid;grid-template-columns:20px 10px 1fr auto;gap:7px;align-items:center;padding:5px 7px;cursor:pointer}
+#board li.on{box-shadow:inset 0 0 0 2px #b98aff}
+#board .rk{font-family:Silkscreen,monospace;font-size:12px;text-align:center}
+#board .sw{width:10px;height:28px}
+#board .nm{font-weight:700;font-size:13px;min-width:0;overflow:hidden}
+#board .nm small{display:block;font-weight:500;opacity:.8;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#board .hp{display:block;height:3px;background:rgba(255,255,255,.2);margin-top:2px}
+#board .hp b{display:block;height:100%;background:#4ee06a}
+#board .sc{text-align:right;font-weight:700}
+#board .sc small{display:block;font-weight:600;color:#14f195;font-size:11px}
+#feed{font-size:12px;gap:4px;max-height:240px;overflow:hidden}
+#feed li{padding:0 0 0 8px;border-left:3px solid var(--lo)}
+#feed li.tip{border-left-color:#14f195}#feed li.kill{border-left-color:#ff5a48}#feed li.loot{border-left-color:#ffd84a}
+#audit li{display:flex;justify-content:space-between;gap:8px}
+@media (max-width:960px){body{overflow:auto;height:auto}main{flex-direction:column}#stage{flex:none;height:60vh}aside{width:100%;overflow:visible}.clock{margin-left:0;max-width:none}}
+@media (prefers-reduced-motion:reduce){.live i{animation:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">Blockfall <span>Arena</span></div>
+  <div class="live off" id="live"><i></i><span>Connecting</span></div>
+  <div class="net" id="net" hidden></div>
+  <div class="clock">
+    <div class="pill bevel" id="phase">Round —</div>
+    <div class="bar slot" title="Dark bands are night. The yellow line is when investing closes.">
+      <div class="night" style="left:33.33%"></div><div class="night" style="left:83.33%"></div>
+      <div class="fill" id="fill"></div><div class="close"></div>
+    </div>
+  </div>
+  <div class="pill bevel" id="loot">🎁 Loot drop in —</div>
+  <div class="pill bevel" id="pot">💰 Prize pot —</div>
+  <button class="pill bevel ca" id="ca" hidden></button>
+</header>
+
+<main>
+  <div id="stage">
+    <div id="tags"></div>
+    <div id="toast"></div>
+    <div class="hint">Drag to orbit, scroll to zoom</div>
+    <div id="results"><div class="card bevel" id="resultsCard"></div></div>
+  </div>
+
+  <aside>
+    <section class="bevel">
+      <h3>Wallet</h3>
+      <div id="walletBox"></div>
+    </section>
+
+    <section class="bevel">
+      <h3>Agent</h3>
+      <div class="who">
+        <div class="face" id="face"></div>
+        <div style="min-width:0"><b id="whoName">—</b>
+          <div class="sub"><a id="whoAddr" target="_blank" rel="noopener">—</a><button class="copy slot" id="copyAddr">Copy</button></div>
+          <div class="sub" id="whoState">—</div>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+
+      <h4>Invest in this agent</h4>
+      <div class="invest slot" id="investInfo">—</div>
+      <div class="chips" id="chips">
+        <button class="bevel" data-amt="0.1" aria-pressed="false">◎0.1</button>
+        <button class="bevel" data-amt="0.5" aria-pressed="true">◎0.5</button>
+        <button class="bevel" data-amt="1" aria-pressed="false">◎1</button>
+        <button class="bevel" data-amt="2" aria-pressed="false">◎2</button>
+      </div>
+      <button class="btn primary" id="investBtn" disabled>Connect a wallet to invest</button>
+      <p class="note">If this agent wins the round, its investors split the prize pot plus the agent's wallet. If it loses, your stake stays in the pot for future rounds. 5% of each investment funds loot drops.</p>
+
+      <h4>Tip for a power-up</h4>
+      <div class="perks" id="perks"></div>
+      <p class="note">Tips go straight to the agent's wallet. 10% is forwarded to the loot fund.</p>
+      <div class="slot" id="txStatus"></div>
+      <label class="toggle"><input type="checkbox" id="follow"> Follow this agent with the camera</label>
+    </section>
+
+    <section class="bevel">
+      <h3>Your investments</h3>
+      <ul class="list" id="positions"></ul>
+    </section>
+
+    <section class="bevel">
+      <h3>Leaderboard</h3>
+      <ul class="list" id="board"></ul>
+    </section>
+
+    <section class="bevel">
+      <h3>Arena feed</h3>
+      <ul class="list" id="feed"></ul>
+    </section>
+
+    <section class="bevel">
+      <h3>Payout log</h3>
+      <ul class="list" id="audit"></ul>
+      <p class="note">Every transfer the arena sends, with its on-chain signature.</p>
+    </section>
+  </aside>
+</main>
+
+<script type="module">
+import * as THREE from 'https://esm.sh/three@0.128.0';
+import { PublicKey, SystemProgram, Transaction, TransactionInstruction } from 'https://esm.sh/@solana/web3.js@1.95.3';
+import { Buffer } from 'https://esm.sh/buffer@6.0.3';
+
+const $ = s => document.querySelector(s);
+const LPS = 1e9;
+const fmt = l => { const s = l / LPS; return '◎' + s.toFixed(s >= 10 ? 2 : 3); };
+const short = s => s ? s.slice(0,4) + '…' + s.slice(-4) : '';
+const mmss = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const STATES = ['🔎 Searching','⛏️ Mining','🎒 Hauling home','🧱 Building','🏃 Retreating','🎁 Going for the chest','⚔️ Fighting','💀 Respawning'];
+const SWORD = [0x8b5a2b, 0x9a9a9a, 0xe6e6e6, 0xf5c518, 0x5ef2e5];
+const SWORD_NAME = ['wood','stone','iron','gold','crystal'];
+const RCOL = {w:0xb07d45, s:0x9a9a9a, i:0xe0cdb8, g:0xf5c518};
+const PERK_UI = {boost:['⚡','Energy drink','70% faster for 20s'], heal:['🛡️','Potion + shield','Full HP, less damage'], crate:['📦','Supply crate','8 blocks for their house'], sword:['⚔️','Sword upgrade','Hits harder in fights']};
+
+let cfg = null, roster = [], tick = null, world = null, sel = 0, follow = false, investAmt = .5, busy = false;
+let me = null, pubkey = null;
+const explorer = (kind, id) => `https://solscan.io/${kind}/${id}${cfg && cfg.network !== 'mainnet' && cfg.network !== 'mainnet-beta' ? '?cluster=' + cfg.network : ''}`;
+
+/* ---------- scene ---------- */
+const stage = $('#stage'), tagsEl = $('#tags');
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, .1, 600);
+const hemi = new THREE.HemisphereLight(0xdff0ff, 0x4a6b2a, .75);
+const sun = new THREE.DirectionalLight(0xffffff, .85); sun.position.set(30,60,18);
+const beaconLight = new THREE.PointLight(0xb070ff, 0, 40); beaconLight.position.set(0,3,0);
+const chestLight = new THREE.PointLight(0xffd84a, 0, 26);
+scene.add(hemi, sun, beaconLight, chestLight);
+const skyCol = new THREE.Color(0x8ecfff); scene.background = skyCol;
+scene.fog = new THREE.Fog(0x8ecfff, 120, 260);
+const SKY_DAY = new THREE.Color(0x8ecfff), SKY_NIGHT = new THREE.Color(0x0d1033), SKY_DUSK = new THREE.Color(0xff9466);
+const BOX = new THREE.BoxGeometry(1,1,1);
+const NOISE = (() => { const c = document.createElement('canvas'); c.width = c.height = 16; const x = c.getContext('2d'); for (let i=0;i<16;i++) for (let j=0;j<16;j++){ const v = 195 + Math.random()*60|0; x.fillStyle = `rgb(${v},${v},${v})`; x.fillRect(i,j,1,1); } const t = new THREE.CanvasTexture(c); t.magFilter = t.minFilter = THREE.NearestFilter; return t; })();
+const matCache = {};
+const M = (c, tex) => { const k = c + '|' + (tex?1:0); return matCache[k] || (matCache[k] = new THREE.MeshLambertMaterial({color:c, map: tex ? NOISE : null})); };
+function addB(p,w,h,d,c,x,y,z,tex,mat){ const m = new THREE.Mesh(BOX, mat || M(c,tex)); m.scale.set(w,h,d); m.position.set(x,y,z); p.add(m); return m; }
+
+const HALF = 36, N = HALF*2;
+{
+  const ground = new THREE.InstancedMesh(BOX, new THREE.MeshLambertMaterial({map:NOISE}), N*N);
+  const wall = new THREE.InstancedMesh(BOX, new THREE.MeshLambertMaterial({map:NOISE, color:0x7a7a7a}), N*4);
+  const d = new THREE.Object3D(), col = new THREE.Color(); let gi = 0, wi = 0;
+  for (let x=-HALF;x<HALF;x++) for (let z=-HALF;z<HALF;z++){
+    d.position.set(x+.5,-.5,z+.5); d.updateMatrix(); ground.setMatrixAt(gi, d.matrix);
+    const r = Math.hypot(x+.5,z+.5), v = .86 + Math.random()*.14;
+    if (r < 3.2) col.setRGB(.42*v,.36*v,.5*v); else if (r > 24.5 && r < 25.8) col.setRGB(.55*v,.42*v,.28*v); else col.setRGB(.36*v,.62*v,.25*v);
+    ground.setColorAt(gi++, col);
+    if (x===-HALF||z===-HALF||x===HALF-1||z===HALF-1){ d.position.y = .5; d.updateMatrix(); wall.setMatrixAt(wi++, d.matrix); }
+  }
+  wall.count = wi; ground.instanceColor.needsUpdate = true; scene.add(ground, wall);
+  const outer = new THREE.Mesh(new THREE.PlaneGeometry(600,600), new THREE.MeshLambertMaterial({color:0x3f6e2c}));
+  outer.rotation.x = -Math.PI/2; outer.position.y = -1.01; scene.add(outer);
+}
+const beacon = new THREE.Group(); addB(beacon,2,.5,2,0x2a2340,0,.25,0,true);
+const beaconCube = addB(beacon,1,1,1,0,0,2.2,0,false,new THREE.MeshLambertMaterial({color:0x9945ff, emissive:0x3a1470}));
+scene.add(beacon);
+
+const BP = [];
+for (let y=0;y<3;y++) for (let x=-1;x<=1;x++) for (let z=-1;z<=1;z++){ if (x===0&&z===0) continue; if (x===0&&z===1&&y<2) continue; BP.push([x,y,z]); }
+for (let x=-1;x<=1;x++) for (let z=-1;z<=1;z++) BP.push([x,3,z]);
+BP.push([0,4,0]);
+for (let y=0;y<2;y++) for (let x=-2;x<=2;x++) for (let z=-2;z<=2;z++){ if (Math.abs(x)<2&&Math.abs(z)<2) continue; if (z===2&&x===0) continue; BP.push([x,y,z]); }
+for (let y=2;y<6;y++) for (const [x,z] of [[-2,-2],[2,-2],[-2,2],[2,2]]) BP.push([x,y,z]);
+
+function tankTex(){ const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0,0,128,128); x.fillStyle = '#111'; x.textAlign = 'center'; x.font = 'bold 30px Impact, "Arial Narrow", sans-serif'; ['STOP','BEING','POOR'].forEach((w,i)=>x.fillText(w,64,42+i*33)); return new THREE.CanvasTexture(c); }
+function makeChar(o){
+  const g = new THREE.Group(), P = {};
+  ['L','R'].forEach((s,i) => { const p = new THREE.Group(); p.position.set(i?.14:-.14,.58,0); g.add(p); addB(p,.24,.58,.26,o.pants,0,-.29,0); P['leg'+s] = p; });
+  let bodyMat = null; if (o.tank){ const w = M(0xffffff); bodyMat = [w,w,w,w,new THREE.MeshLambertMaterial({map:tankTex()}),w]; }
+  addB(g,.58,.6,.32,o.shirt,0,.88,0,false,bodyMat);
+  ['L','R'].forEach((s,i) => { const p = new THREE.Group(); p.position.set(i?.39:-.39,1.14,0); g.add(p); if (o.tank) addB(p,.2,.56,.24,o.skin,0,-.26,0); else { addB(p,.2,.4,.24,o.shirt,0,-.18,0); addB(p,.19,.17,.23,o.skin,0,-.46,0); } P['arm'+s] = p; });
+  addB(g,.5,.5,.5,o.skin,0,1.43,0);
+  if (o.shades){ addB(g,.54,.14,.05,0xffffff,0,1.47,.265); addB(g,.16,.1,.03,0x2b2b2b,-.13,1.47,.295); addB(g,.16,.1,.03,0x2b2b2b,.13,1.47,.295); }
+  else { addB(g,.09,.09,.02,o.eyes||0x1b1b2a,-.12,1.46,.255); addB(g,.09,.09,.02,o.eyes||0x1b1b2a,.12,1.46,.255); }
+  addB(g,.12,.03,.02,0x3a2a2a,0,1.3,.255);
+  if (o.hair != null){ addB(g,.54,.1,.54,o.hair,0,1.71,0); addB(g,.54,.44,.08,o.hair,0,1.47,-.26); if (o.longHair){ addB(g,.08,.58,.46,o.hair,-.29,1.36,-.02); addB(g,.08,.58,.46,o.hair,.29,1.36,-.02); addB(g,.54,.1,.06,o.hair,0,1.63,.27); } }
+  if (o.hat != null){ addB(g,.58,.17,.58,o.hat,0,1.8,0); if (o.brim) addB(g,.56,.05,.2,o.hat,0,1.72,.35); }
+  if (!o.zombie){ P.swordMat = new THREE.MeshLambertMaterial({color:SWORD[0]}); addB(P.armR,.07,.07,.72,0,0,-.5,.36,false,P.swordMat); addB(P.armR,.24,.06,.08,0x3a2a1a,0,-.5,.06); }
+  return {g,P};
+}
+const ZOMBIE = {skin:0x5d9c46, shirt:0x2f6d8c, pants:0x3a2f6b, hair:0x2f5a24, eyes:0x3a0000, zombie:true};
+
+const views = [];
+function buildAgents(){
+  if (views.length) return;
+  const n = roster.length;
+  roster.forEach((o,i) => {
+    const {g,P} = makeChar(o); scene.add(g);
+    const ang = i/n*Math.PI*2 + .2;
+    const hx = Math.round(Math.cos(ang)*29)+.5, hz = Math.round(Math.sin(ang)*29)+.5;
+    const rot = Math.round(Math.atan2(-hx,-hz)/(Math.PI/2))*(Math.PI/2);
+    const house = new THREE.Group(); house.position.set(hx,0,hz); house.rotation.y = rot; scene.add(house);
+    addB(house,.14,2.6,.14,0x5a3d22,-2.9,1.3,2.9);
+    addB(house,.9,.55,.06,0,-2.4,2.3,2.9,false,new THREE.MeshLambertMaterial({color:new THREE.Color(o.ui)}));
+    g.position.set(hx + Math.sin(rot)*3.4, 0, hz + Math.cos(rot)*3.4);
+    const tag = document.createElement('div'); tag.className = 'tag'; tag.innerHTML = `${esc(o.name)}<i><b></b></i>`; tagsEl.appendChild(tag);
+    views.push({g,P,house,blocks:[],tag,bar:tag.querySelector('b'),walk:0,tx:g.position.x,tz:g.position.z,tr:0,sword:0});
+  });
+}
+
+const nodeViews = new Map(), monsterViews = new Map(), particles = [], pops = [], growing = [];
+let chestView = null;
+function nodeMesh(type){
+  const g = new THREE.Group();
+  if (type==='w'){ addB(g,.7,2,.7,0x6b4a2b,0,1,0,true); addB(g,2.1,1.5,2.1,0x3f8f3a,0,2.5,0,true); addB(g,1.2,.7,1.2,0x4aa543,0,3.5,0,true); }
+  else { addB(g,1,1,1,0x7d7d7d,0,.5,0,true); const oc = type==='s' ? 0x5c5c5c : RCOL[type]; [[.45,.3,.1],[-.45,.7,-.2],[.1,.95,.2],[-.2,.6,.45],[.25,.4,-.45],[-.3,.95,-.25]].forEach(p => addB(g,.22,.22,.22,oc,p[0],p[1],p[2])); }
+  return g;
+}
+function burst(x,y,z,c,n){ for (let i=0;i<n && particles.length<300;i++){ const m = new THREE.Mesh(BOX, M(c)); m.scale.setScalar(.08+Math.random()*.1); m.position.set(x+(Math.random()-.5)*.6, y, z+(Math.random()-.5)*.6); scene.add(m); particles.push({m, vx:(Math.random()-.5)*4, vy:1.5+Math.random()*2.5, vz:(Math.random()-.5)*4, life:.5+Math.random()*.4}); } }
+
+function applyWorld(w){
+  world = w;
+  const seen = new Set();
+  for (const [id,type,x,z,frac] of w.nodes){
+    seen.add(id);
+    let v = nodeViews.get(id);
+    if (!v){ const g = nodeMesh(type); g.position.set(x,0,z); g.scale.setScalar(.01); scene.add(g); v = {g,type,x,z,frac}; nodeViews.set(id, v); }
+    v.frac = frac;
+  }
+  for (const [id,v] of nodeViews) if (!seen.has(id)){ scene.remove(v.g); burst(v.x,1,v.z,RCOL[v.type],8); nodeViews.delete(id); }
+  w.houses.forEach((str,i) => {
+    const v = views[i]; if (!v) return;
+    let k = 0; while (k < v.blocks.length && k < str.length && v.blocks[k].userData.t === str[k]) k++;
+    while (v.blocks.length > k){ const m = v.blocks.pop(); const wp = new THREE.Vector3(); m.getWorldPosition(wp); v.house.remove(m); burst(wp.x,wp.y,wp.z,RCOL[m.userData.t],4); }
+    for (; k < str.length && k < BP.length; k++){ const [bx,by,bz] = BP[k]; const m = new THREE.Mesh(BOX, M(RCOL[str[k]], true)); m.position.set(bx,by+.5,bz); m.scale.setScalar(.01); m.userData = {t:str[k], born:performance.now()}; v.house.add(m); v.blocks.push(m); growing.push(m); }
+  });
+}
+
+function applyTick(t){
+  const prevChest = tick?.chest;
+  tick = t;
+  t.agents.forEach((a,i) => {
+    const v = views[i]; if (!v) return;
+    const dead = a[3] === 7;
+    if (!dead && !v.g.visible){ v.g.position.set(a[0],0,a[1]); }
+    v.g.visible = !dead;
+    v.tx = a[0]; v.tz = a[1]; v.tr = a[2]; v.swing = a[6];
+    if (a[5] !== v.sword){ v.sword = a[5]; v.P.swordMat.color.setHex(SWORD[a[5]]); }
+  });
+  const seen = new Set();
+  for (const [id,x,z,r,hp] of t.monsters){
+    seen.add(id);
+    let v = monsterViews.get(id);
+    if (!v){ const {g,P} = makeChar(ZOMBIE); g.position.set(x,0,z); scene.add(g); const tag = document.createElement('div'); tag.className = 'mtag'; tag.innerHTML = '<i><b></b></i>'; tagsEl.appendChild(tag); v = {g,P,tag,bar:tag.querySelector('b'),walk:0,seed:Math.random()*9}; monsterViews.set(id, v); }
+    v.tx = x; v.tz = z; v.tr = r; v.hp = hp;
+  }
+  for (const [id,v] of monsterViews) if (!seen.has(id)){ burst(v.g.position.x,1,v.g.position.z,0x5d9c46,10); scene.remove(v.g); v.tag.remove(); monsterViews.delete(id); }
+
+  if (t.chest && !chestView){
+    const g = new THREE.Group();
+    addB(g,1.2,.8,.9,0x7a4a1f,0,.4,0,true); addB(g,1.26,.12,.96,0xf5c518,0,.8,0); const lid = addB(g,1.2,.32,.9,0x8a5a2a,0,1.02,0,true); addB(g,.2,.26,.06,0xf5c518,0,.8,.48);
+    const beam = new THREE.Mesh(BOX, new THREE.MeshBasicMaterial({color:0xffd84a, transparent:true, opacity:.3, depthWrite:false})); beam.scale.set(.6,60,.6); beam.position.y = 30; g.add(beam);
+    g.position.set(t.chest.x,0,t.chest.z); scene.add(g);
+    const tag = document.createElement('div'); tag.className = 'ctag'; tagsEl.appendChild(tag);
+    chestView = {g,lid,beam,tag}; chestLight.position.set(t.chest.x,3,t.chest.z);
+    toast(`🎁 Loot drop! ${fmt(t.chest.v)} in creator fees`);
+  } else if (!t.chest && chestView){
+    burst(prevChest?.x ?? 0, 1.2, prevChest?.z ?? 0, 0xffd84a, 26);
+    scene.remove(chestView.g); chestView.tag.remove(); chestView = null;
+  }
+  $('#results').classList.toggle('on', t.mode === 'results');
+  const ni = document.getElementById('nextIn'); if (ni) ni.textContent = `Next round starts in ${t.resultsIn}s`;
+}
+
+/* ---------- camera ---------- */
+let yaw = .7, pitch = .85, dist = 82, dragging = false, lx = 0, ly = 0, lastInteract = -10, clock = 0;
+const tgt = new THREE.Vector3(), want = new THREE.Vector3();
+const cv = renderer.domElement;
+cv.addEventListener('pointerdown', e => { dragging = true; lx = e.clientX; ly = e.clientY; cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove', e => { if (!dragging) return; yaw -= (e.clientX-lx)*.006; pitch = clamp(pitch + (e.clientY-ly)*.004, .25, 1.4); lx = e.clientX; ly = e.clientY; lastInteract = clock; });
+cv.addEventListener('pointerup', () => dragging = false);
+cv.addEventListener('wheel', e => { e.preventDefault(); dist = clamp(dist + e.deltaY*.05, 14, 140); lastInteract = clock; }, {passive:false});
+let sw = 1, sh = 1;
+new ResizeObserver(() => { sw = stage.clientWidth; sh = stage.clientHeight; renderer.setSize(sw, sh); camera.aspect = sw/sh; camera.updateProjectionMatrix(); }).observe(stage);
+const V = new THREE.Vector3();
+const toScreen = (x,y,z) => { V.set(x,y,z).project(camera); return (V.z > 1 || V.z < -1) ? null : [(V.x*.5+.5)*sw, (-V.y*.5+.5)*sh]; };
+const place = (el, s) => { if (!s){ el.style.display = 'none'; return; } el.style.display = ''; el.style.transform = `translate(${s[0]}px,${s[1]}px) translate(-50%,-100%)`; };
+
+function animate(v, dt, zombie){
+  const p = v.g.position, k = 1 - Math.exp(-dt*12);
+  const dx = v.tx - p.x, dz = v.tz - p.z, d = Math.hypot(dx, dz);
+  if (d > 6){ p.x = v.tx; p.z = v.tz; } else { p.x += dx*k; p.z += dz*k; }
+  const dr = ((v.tr - v.g.rotation.y + Math.PI*3) % (Math.PI*2)) - Math.PI; v.g.rotation.y += dr*k;
+  const moving = d > .03, P = v.P;
+  if (moving){ v.walk += dt*9; const s = Math.sin(v.walk); P.legL.rotation.x = s*.7; P.legR.rotation.x = -s*.7; P.armL.rotation.x = -s*.5; if (!zombie && !v.swing) P.armR.rotation.x = s*.5; p.y = Math.abs(Math.cos(v.walk))*.06; }
+  else { P.legL.rotation.x *= .8; P.legR.rotation.x *= .8; P.armL.rotation.x *= .8; p.y *= .8; }
+  if (zombie){ P.armL.rotation.x = -1.4 + Math.sin(clock*6+v.seed)*.12; P.armR.rotation.x = -1.4 - Math.sin(clock*6+v.seed)*.12; return; }
+  if (v.swing) P.armR.rotation.x = -1.3 + Math.sin(clock*16)*.9; else if (!moving) P.armR.rotation.x *= .8;
+}
+
+let last = performance.now(), uiT = 0;
+function frame(now){
+  const dt = Math.min(.05, (now - last)/1000); last = now; clock += dt;
+  views.forEach(v => { if (v.g.visible) animate(v, dt, false); });
+  monsterViews.forEach(v => animate(v, dt, true));
+  nodeViews.forEach(v => { const s = .55 + .45*v.frac, c = v.g.scale.x; v.g.scale.setScalar(c + (s-c)*Math.min(1, dt*10)); });
+  for (let i=growing.length; i--;){ const m = growing[i], k = (now - m.userData.born)/280; if (k >= 1){ m.scale.setScalar(1); growing.splice(i,1); } else { const c = 1.9, q = k-1; m.scale.setScalar(Math.max(.01, 1 + (c+1)*q*q*q + c*q*q)); } }
+  for (let i=particles.length; i--;){ const p = particles[i]; p.vy -= 9*dt; p.m.position.x += p.vx*dt; p.m.position.y += p.vy*dt; p.m.position.z += p.vz*dt; p.life -= dt; if (p.life <= 0 || p.m.position.y < 0){ scene.remove(p.m); particles.splice(i,1); } }
+  beaconCube.rotation.y += dt*.8;
+  if (chestView){ chestView.beam.material.opacity = .22 + Math.sin(clock*4)*.1; chestView.lid.position.y = 1.02 + Math.abs(Math.sin(clock*3))*.08; }
+
+  const c = tick ? tick.t % 180 : 0;
+  const nf = !tick || tick.mode !== 'race' ? 0 : c < 110 ? 0 : c < 120 ? (c-110)/10 : c < 165 ? 1 : Math.max(0, 1-(c-165)/15);
+  skyCol.copy(SKY_DAY).lerp(SKY_NIGHT, nf).lerp(SKY_DUSK, Math.sin(nf*Math.PI)*.35); scene.fog.color.copy(skyCol);
+  sun.intensity = .85*(1-nf) + .12; hemi.intensity = .75 - .42*nf; beaconLight.intensity = nf*1.6; chestLight.intensity = chestView ? .6 + nf*1.6 : 0;
+
+  const focusI = tick && tick.mode === 'results' ? tick.winner : (follow ? sel : -1);
+  const fv = views[focusI];
+  if (fv && fv.g.visible) want.set(fv.g.position.x, 0, fv.g.position.z); else want.set(0,0,0);
+  tgt.lerp(want, 1 - Math.exp(-dt*3));
+  if (!dragging && !fv && clock - lastInteract > 3) yaw += dt*.04;
+  camera.position.set(tgt.x + dist*Math.cos(pitch)*Math.sin(yaw), tgt.y + dist*Math.sin(pitch), tgt.z + dist*Math.cos(pitch)*Math.cos(yaw));
+  camera.lookAt(tgt);
+  renderer.render(scene, camera);
+
+  views.forEach((v,i) => { place(v.tag, v.g.visible && toScreen(v.g.position.x, 2.25, v.g.position.z)); v.tag.classList.toggle('sel', i === sel); if (tick) v.bar.style.width = tick.agents[i][4] + '%'; });
+  monsterViews.forEach(v => { place(v.tag, toScreen(v.g.position.x, 2.1, v.g.position.z)); v.bar.style.width = (v.hp*100) + '%'; });
+  if (chestView && tick?.chest){ const ch = tick.chest; place(chestView.tag, toScreen(ch.x, 2.2, ch.z)); chestView.tag.innerHTML = `🎁 ${fmt(ch.v)}${ch.o >= 0 ? `<br>${esc(roster[ch.o].name)} opening<i><b style="width:${ch.p*100}%"></b></i>` : ''}`; }
+  for (let i=pops.length; i--;){ const p = pops[i], age = clock - p.born; if (age > 1.8){ p.el.remove(); pops.splice(i,1); continue; } place(p.el, toScreen(p.x, 2.8 + age*1.3, p.z)); p.el.style.opacity = 1 - age/1.8; }
+
+  uiT -= dt; if (uiT <= 0){ uiT = .3; renderUI(); }
+  requestAnimationFrame(frame);
+}
+
+/* ---------- network ---------- */
+const toastEl = $('#toast'); let toastTimer;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.classList.remove('on'), 3500); }
+function feed(text, kind){ const li = document.createElement('li'); if (kind) li.className = kind; li.textContent = text; $('#feed').prepend(li); while ($('#feed').children.length > 40) $('#feed').lastChild.remove(); }
+
+function connectWs(){
+  const ws = new WebSocket((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws');
+  ws.onopen = () => { $('#live').classList.remove('off'); $('#live span').textContent = 'Live'; };
+  ws.onclose = e => {
+    $('#live').classList.add('off');
+    $('#live span').textContent = e.code === 4003 ? 'Unavailable in your region' : 'Reconnecting';
+    if (e.code !== 4003) setTimeout(connectWs, 2000);
+  };
+  ws.onmessage = ev => {
+    const {k, d} = JSON.parse(ev.data);
+    if (k === 'h'){ cfg = d.cfg; roster = d.roster; buildAgents(); setupStatic(); }
+    else if (k === 't') applyTick(d);
+    else if (k === 'w') applyWorld(d);
+    else if (k === 'f') feed(d.text, d.kind);
+    else if (k === 'p'){ const el = document.createElement('div'); el.className = 'pop ' + (d.cls||''); el.textContent = d.text; tagsEl.appendChild(el); pops.push({el, x:d.x, z:d.z, born:clock}); }
+    else if (k === 'r') showResults(d);
+  };
+}
+function showResults(d){
+  const w = roster[d.winner];
+  $('#resultsCard').innerHTML = `<h2>🏆 ${esc(w.name)} wins round ${d.round}</h2>
+    <ol>${d.top.map(([i,s]) => `<li><span style="color:${roster[i].ui};text-shadow:1px 1px 0 #0006">${esc(roster[i].name)}</span>, ${s} pts</li>`).join('')}</ol>
+    <div id="nextIn">Next round starts soon</div>`;
+  setTimeout(() => { refreshMe(); refreshAudit(); }, 4000);
+}
+
+async function api(path, body){
+  const r = await fetch(path, body ? {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)} : undefined);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok && !j.status) throw new Error(j.error || `Request failed (${r.status})`);
+  return j;
+}
+
+/* ---------- wallet ---------- */
+const provider = () => window.phantom?.solana || window.backpack || window.solflare || window.solana;
+let walletBal = null;
+async function connectWallet(){
+  const p = provider();
+  if (!p){ toast('No Solana wallet found. Install Phantom, Backpack or Solflare, then reload.'); return; }
+  try {
+    const res = await p.connect();
+    pubkey = (res?.publicKey || p.publicKey).toString();
+    p.on?.('accountChanged', pk => { pubkey = pk ? pk.toString() : null; refreshMe(); renderWallet(); });
+    renderWallet(); refreshMe();
+  } catch { toast('Wallet connection was cancelled.'); }
+}
+async function refreshBalance(){ if (!pubkey) return; try { walletBal = (await api('/api/balance/' + pubkey)).lamports; } catch {} renderWallet(); }
+function renderWallet(){
+  $('#walletBox').innerHTML = !pubkey
+    ? `<button class="btn primary" id="connect">Connect wallet</button><p class="note">Connect Phantom, Backpack or Solflare to tip and invest. Every action is a normal SOL transfer you approve in your wallet.</p>`
+    : `<div class="row"><a class="addr slot" href="${explorer('account', pubkey)}" target="_blank" rel="noopener">${short(pubkey)}</a><span class="bal slot">${walletBal == null ? '…' : fmt(walletBal)}</span><button class="btn bevel" id="disconnect">Disconnect</button></div>`;
+}
+$('#walletBox').addEventListener('click', e => {
+  if (e.target.id === 'connect') connectWallet();
+  if (e.target.id === 'disconnect'){ provider()?.disconnect?.(); pubkey = null; me = null; renderWallet(); }
+});
+setInterval(refreshBalance, 20000);
+
+function setStatus(html){ const el = $('#txStatus'); el.innerHTML = html; el.classList.toggle('on', !!html); }
+async function pay(to, lamports, memo, label){
+  if (!pubkey){ connectWallet(); return; }
+  if (busy) return;
+  busy = true; renderUI();
+  setStatus(`${esc(label)}: approve it in your wallet…`);
+  try {
+    const bh = await api('/api/blockhash');
+    const from = new PublicKey(pubkey);
+    const tx = new Transaction({feePayer: from, blockhash: bh.blockhash, lastValidBlockHeight: bh.lastValidBlockHeight});
+    tx.add(SystemProgram.transfer({fromPubkey: from, toPubkey: new PublicKey(to), lamports}));
+    tx.add(new TransactionInstruction({programId: new PublicKey(cfg.memoProgram), keys: [], data: Buffer.from(memo, 'utf8')}));
+    const res = await provider().signAndSendTransaction(tx);
+    const sig = typeof res === 'string' ? res : res.signature;
+    setStatus(`Confirming <a href="${explorer('tx', sig)}" target="_blank" rel="noopener">${short(sig)}</a>…`);
+    let r = null;
+    for (let i=0; i<45; i++){
+      r = await api('/api/deposit', {signature: sig}).catch(() => ({status:'pending'}));
+      if (!['pending','processing'].includes(r.status)) break;
+      await sleep(2000);
+    }
+    const msg = r && !['pending','processing'].includes(r.status) ? r.message : 'Still confirming. It will be credited automatically once it lands.';
+    setStatus(`${esc(msg)} <a href="${explorer('tx', sig)}" target="_blank" rel="noopener">View transaction</a>`);
+    toast(msg);
+  } catch (e) {
+    const m = String(e?.message || e);
+    setStatus(/reject|cancel|declin/i.test(m) ? 'Transaction cancelled.' : `Transaction failed: ${esc(m)}`);
+  } finally {
+    busy = false; refreshMe(); refreshBalance(); renderUI();
+  }
+}
+
+/* ---------- UI ---------- */
+function setupStatic(){
+  if (cfg.network !== 'mainnet' && cfg.network !== 'mainnet-beta'){ $('#net').hidden = false; $('#net').textContent = cfg.network; }
+  if (cfg.tokenCa){ const ca = $('#ca'); ca.hidden = false; ca.textContent = `CA ${short(cfg.tokenCa)}`; ca.title = 'Copy token address'; ca.onclick = () => navigator.clipboard.writeText(cfg.tokenCa).then(() => toast('Token address copied')); }
+  $('#perks').innerHTML = Object.entries(cfg.perks).map(([id,p]) => `<button class="perk slot" data-perk="${id}"><span class="top"><span>${PERK_UI[id][0]} ${PERK_UI[id][1]}</span><span class="cost">◎${p.sol}</span></span><small>${PERK_UI[id][2]}</small></button>`).join('');
+  renderWallet(); refreshAudit();
+}
+$('#perks').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b || !cfg) return;
+  const perk = cfg.perks[b.dataset.perk], a = roster[sel];
+  pay(a.addr, Math.round(perk.sol*LPS), `bfa:tip:${sel}:${b.dataset.perk}`, `Tip ${a.name} ◎${perk.sol}`);
+});
+$('#chips').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; investAmt = +b.dataset.amt; $('#chips').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderUI(); });
+$('#investBtn').addEventListener('click', () => { if (!pubkey) return connectWallet(); if (!tick) return; pay(cfg.vault, Math.round(investAmt*LPS), `bfa:invest:${sel}:${tick.round}`, `Invest ◎${investAmt} in ${roster[sel].name}`); });
+$('#board').addEventListener('pointerdown', e => { const li = e.target.closest('li'); if (li){ sel = +li.dataset.i; renderUI(); } });
+$('#board').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.dataset.i){ e.preventDefault(); sel = +e.target.dataset.i; renderUI(); } });
+$('#follow').addEventListener('change', e => { follow = e.target.checked; dist = follow ? Math.min(dist, 24) : Math.max(dist, 70); });
+$('#copyAddr').addEventListener('click', () => roster[sel] && navigator.clipboard.writeText(roster[sel].addr).then(() => toast('Agent address copied')));
+
+async function refreshMe(){ if (!pubkey) { me = null; return; } try { me = await api('/api/me/' + pubkey); } catch {} }
+async function refreshAudit(){
+  try {
+    const rows = await api('/api/audit');
+    $('#audit').innerHTML = rows.slice(0, 15).map(t => `<li class="slot"><span>${esc(t.reason.split(':')[0])} ${fmt(t.lamports)} to ${short(t.to_addr)}</span>${t.sig && t.status === 'sent' ? `<a href="${explorer('tx', t.sig)}" target="_blank" rel="noopener">${t.status}</a>` : `<span>${esc(t.status)}</span>`}</li>`).join('') || '<li class="slot">No transfers yet.</li>';
+  } catch {}
+}
+setInterval(refreshAudit, 30000);
+setInterval(refreshMe, 10000);
+
+function estReturn(i, net){
+  if (!world || !world.stakes[i]) return 0;
+  return (world.pot + world.balances[i]) * net / world.stakes[i];
+}
+function renderUI(){
+  if (!tick || !world || !roster.length) return;
+  const t = tick;
+  const icon = t.mode !== 'race' ? '🏆' : (t.t % 180) < 110 ? '☀️' : (t.t % 180) < 165 ? '🌙' : '🌅';
+  $('#phase').textContent = `${icon} Round ${t.round}, ${mmss(cfg.roundSeconds - t.t)}`;
+  $('#fill').style.width = `calc(${Math.min(1, t.t/cfg.roundSeconds)*100}% - 4px)`;
+  $('#loot').innerHTML = t.chest ? `🎁 Chest is live <b>${fmt(t.chest.v)}</b>` : `🎁 Loot drop in ${mmss(t.lootIn)} <b>${fmt(world.lootFund)}</b>`;
+  $('#pot').innerHTML = `💰 Prize pot <b>${fmt(world.pot)}</b>`;
+
+  const order = roster.map((_,i) => i).sort((a,b) => world.scores[b] - world.scores[a]);
+  $('#board').innerHTML = order.map((i,rank) => { const a = t.agents[i], o = roster[i]; return `<li class="slot ${i===sel?'on':''}" data-i="${i}" tabindex="0">
+    <span class="rk">${rank+1}</span><span class="sw" style="background:${o.ui}"></span>
+    <span class="nm">${esc(o.name)}${world.wins[i] ? ` 🏆${world.wins[i]}` : ''}<small>${STATES[a[3]]}, ☠${world.pvp[i]}, backed ${fmt(world.stakes[i])}</small><span class="hp"><b style="width:${a[4]}%"></b></span></span>
+    <span class="sc">${world.scores[i]}<small>${fmt(world.balances[i])}</small></span></li>`; }).join('');
+
+  const o = roster[sel], a = t.agents[sel];
+  $('#face').style.background = o.ui;
+  $('#whoName').textContent = o.name;
+  const wa = $('#whoAddr'); wa.textContent = short(o.addr); wa.href = explorer('account', o.addr);
+  $('#whoState').textContent = `${STATES[a[3]]}, rank ${order.indexOf(sel)+1} of ${roster.length}`;
+  $('#stats').innerHTML = [['Wallet', fmt(world.balances[sel])], ['HP', a[4]], ['Sword', SWORD_NAME[a[5]]], ['Eliminations', world.pvp[sel]], ['Zombies', world.kills[sel]], ['Boost', a[7] ? a[7] + 's' : 'off']]
+    .map(([k,v]) => `<div class="slot">${k}<b>${v}</b></div>`).join('');
+
+  const open = t.investOpen;
+  const mine = me?.round === t.round ? (me.stakes.find(s => s.agent === sel)?.lamports || 0) : 0;
+  const addNet = Math.round(investAmt*LPS*(1 - cfg.investFeeBps/10000));
+  const projStake = world.stakes[sel] + addNet, projRet = (world.pot + addNet + world.balances[sel]) * (mine + addNet) / projStake;
+  $('#investInfo').innerHTML = `${open ? `Investing closes in <b>${mmss(cfg.investClose - t.t)}</b>` : t.mode === 'race' ? 'Investing is closed until next round' : 'Round is settling'}<br>
+    Total backing ${fmt(world.stakes[sel])}. Your stake ${fmt(mine)}${mine ? `, pays about <b>${fmt(estReturn(sel, mine))}</b> if they win` : ''}.
+    ${open ? `<br>Adding ◎${investAmt} would pay about <b>${fmt(projRet)}</b> total if ${esc(o.name)} wins.` : ''}`;
+  const ib = $('#investBtn');
+  ib.disabled = busy || (pubkey && !open);
+  ib.textContent = !pubkey ? 'Connect a wallet to invest' : busy ? 'Waiting for transaction…' : !open ? 'Investing closed' : `Invest ◎${investAmt} in ${o.name}`;
+  $('#perks').querySelectorAll('button').forEach(b => b.disabled = busy);
+
+  const pos = me?.round === t.round ? me.stakes : [];
+  $('#positions').innerHTML = (pos.length
+    ? pos.map(s => `<li class="slot"><b style="color:${roster[s.agent].ui}">${esc(roster[s.agent].name)}</b>, rank ${order.indexOf(s.agent)+1}<br>Stake ${fmt(s.lamports)}, pays about ${fmt(estReturn(s.agent, s.lamports))} if they win</li>`).join('')
+    : `<li class="slot">${pubkey ? 'No investments this round. Pick an agent and invest before the yellow line.' : 'Connect a wallet to start investing.'}</li>`)
+    + (me?.payouts || []).slice(0, 8).map(p => `<li class="slot">Round ${p.round}: ${esc(roster[p.agent]?.name || '')} paid you <b style="color:#14f195">${fmt(p.lamports)}</b> ${p.sig && p.status === 'sent' ? `<a href="${explorer('tx', p.sig)}" target="_blank" rel="noopener">tx</a>` : `(${esc(p.status || 'queued')})`}</li>`).join('');
+}
+
+renderWallet();
+connectWs();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
